@@ -16,6 +16,7 @@ exports.createSchemaCustomization = ({ actions }) => {
       tags: [String]
       author: String
       thumbnail: File @fileByRelativePath
+      draft: Boolean
     }
   `)
 }
@@ -31,6 +32,9 @@ exports.createPages = async ({ graphql, actions }) => {
           id
           internal {
             contentFilePath
+          }
+          frontmatter {
+            draft
           }
           parent {
             ... on File {
@@ -49,12 +53,15 @@ exports.createPages = async ({ graphql, actions }) => {
 
   result.data.allMdx.nodes.forEach(node => {
     const dir = node.parent.relativeDirectory
-    const slug = dir ? `/blog/${dir}` : `/blog/${node.parent.name}`
+    const isDraft = node.frontmatter?.draft === true
+    const basePath = isDraft ? "draft" : "blog"
+    const slug = dir ? `/${basePath}/${dir}` : `/${basePath}/${node.parent.name}`
     createPage({
       path: slug,
       component: `${blogPostTemplate}?__contentFilePath=${node.internal.contentFilePath}`,
       context: {
         id: node.id,
+        isDraft,
       },
     })
   })

@@ -2,6 +2,17 @@
   command = "npm run build:ci"
   publish = "public"
   functions = "netlify/functions"
+  edge_functions = "netlify/edge-functions"
+
+# /draft/* 경로 전체를 Edge Function으로 보호
+[[edge_functions]]
+  path = "/draft/*"
+  function = "draft-guard"
+
+# page-data JSON 직접 접근도 차단 (콘텐츠 노출 방지)
+[[edge_functions]]
+  path = "/page-data/draft/*"
+  function = "draft-guard"
 
 [build.environment]
   NODE_VERSION = "20"

@@ -21,6 +21,7 @@ interface PostNode {
     tags?: string[]
     author?: string
     thumbnail?: ThumbnailNode
+    draft?: boolean
   }
   excerpt?: string
 }
@@ -52,7 +53,8 @@ const badgeClass = (tag: string) =>
 
 const getPostSlug = (post: PostNode) => {
   const dir = post.parent?.relativeDirectory
-  return dir ? `/blog/${dir}` : post.parent?.name ? `/blog/${post.parent.name}` : "/"
+  const base = post.frontmatter.draft ? "draft" : "blog"
+  return dir ? `/${base}/${dir}` : post.parent?.name ? `/${base}/${post.parent.name}` : "/"
 }
 
 const thumbnailGradient: Record<string, string> = {
@@ -204,9 +206,22 @@ const FeaturedHero = ({ posts }: { posts: PostNode[] }) => {
   )
 }
 
+/* ── Draft thumbnail placeholder ───────────────────── */
+const DraftThumbnailPlaceholder = () => (
+  <div className="w-44 h-[120px] rounded-xl flex-shrink-0 overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center">
+    <div className="text-center select-none pointer-events-none">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-1.5 text-slate-400 dark:text-slate-500">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+      <span className="text-slate-400 dark:text-slate-500 text-[9px] font-bold tracking-[0.2em] uppercase">Locked</span>
+    </div>
+  </div>
+)
+
 /* ── Article card ──────────────────────────────────── */
 const ArticleCard = ({ post }: { post: PostNode }) => {
-  const { title, date, description, tags, author, thumbnail } = post.frontmatter
+  const { title, date, description, tags, author, thumbnail, draft } = post.frontmatter
   const tag = tags?.[0] ?? "일반"
   const slug = getPostSlug(post)
   const img = thumbnail ? getImage(thumbnail.childImageSharp.gatsbyImageData) : null
@@ -224,7 +239,24 @@ const ArticleCard = ({ post }: { post: PostNode }) => {
               <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">{author}</span>
             )}
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 leading-snug tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+          <h3 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 leading-snug tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            {draft && (
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="shrink-0 text-gray-400 dark:text-gray-500"
+                aria-label="임시 저장"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            )}
             {title ?? "제목 없음"}
           </h3>
           {(description || post.excerpt) && (
@@ -236,7 +268,7 @@ const ArticleCard = ({ post }: { post: PostNode }) => {
             <span className="text-xs text-gray-400 dark:text-gray-500 mt-3 block">{date}</span>
           )}
         </div>
-        {img && (
+        {img ? (
           <div className="w-44 h-[120px] rounded-xl flex-shrink-0 overflow-hidden">
             <GatsbyImage
               image={img}
@@ -245,7 +277,9 @@ const ArticleCard = ({ post }: { post: PostNode }) => {
               imgClassName="object-cover"
             />
           </div>
-        )}
+        ) : draft ? (
+          <DraftThumbnailPlaceholder />
+        ) : null}
       </Link>
     </article>
   )
@@ -395,13 +429,17 @@ const IndexPage = ({ data, location }: IndexPageProps) => {
     : allPosts
 
   const pageTitle = activeCategory ? `${activeCategory}` : "전체 아티클"
-  const showHero = !activeCategory && posts.length > 0
+  const heroPosts = React.useMemo(
+    () => posts.filter(p => !p.frontmatter.draft).slice(0, 3),
+    [posts]
+  )
+  const showHero = !activeCategory && heroPosts.length > 0
 
   return (
     <Layout location={location}>
       <div className="py-14">
-        {/* Featured Hero — 카테고리 필터 없을 때만 표시, 최대 3개 */}
-        {showHero && <FeaturedHero posts={posts.slice(0, 3)} />}
+        {/* Featured Hero — 카테고리 필터 없을 때만 표시, draft 제외, 최대 3개 */}
+        {showHero && <FeaturedHero posts={heroPosts} />}
 
         <div className="flex items-center gap-3 mb-10">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
@@ -472,6 +510,7 @@ export const query = graphql`
           description
           tags
           author
+          draft
           thumbnail {
             childImageSharp {
               gatsbyImageData(width: 800, placeholder: BLURRED, layout: CONSTRAINED, formats: [AUTO, WEBP, AVIF])

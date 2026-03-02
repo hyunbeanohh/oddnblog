@@ -124,6 +124,7 @@ interface BlogPostData {
       tags?: string[]
       author?: string
       thumbnail?: ThumbnailNode
+      draft?: boolean
     }
   }
 }
@@ -132,10 +133,39 @@ interface BlogPostProps {
   data: BlogPostData
   children: React.ReactNode
   location: { search?: string }
+  pageContext: { isDraft?: boolean }
 }
 
-const BlogPost = ({ data, children, location }: BlogPostProps) => {
+/* ── Draft thumbnail placeholder ───────────────────── */
+const DraftThumbnail = ({ className }: { className?: string }) => (
+  <div
+    className={`bg-gradient-to-br from-slate-400 to-slate-700 dark:from-slate-600 dark:to-slate-900 flex items-center justify-center ${className ?? ""}`}
+  >
+    <div className="text-center select-none pointer-events-none">
+      <svg
+        width="36"
+        height="36"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="mx-auto mb-2 opacity-40"
+      >
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+      </svg>
+      <span className="text-white/50 text-xs font-bold tracking-[0.2em] uppercase">
+        Draft
+      </span>
+    </div>
+  </div>
+)
+
+const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
   const { title, date, description, tags, author, thumbnail } = data.mdx.frontmatter
+  const { isDraft } = pageContext
   const [popoverOpen, setPopoverOpen] = React.useState(false)
 
   return (
@@ -144,16 +174,44 @@ const BlogPost = ({ data, children, location }: BlogPostProps) => {
         <div className="max-w-2xl mx-auto">
           {/* Back link */}
           <Link
-            to="/"
+            to={isDraft ? "/draft" : "/"}
             className="inline-flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-10 transition-colors group"
           >
             <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
             목록으로 돌아가기
           </Link>
 
+          {/* Draft banner */}
+          {isDraft && (
+            <div className="mb-6 px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-center gap-2.5">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-amber-500 shrink-0"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                임시 저장된 글입니다. 관리자만 볼 수 있습니다.
+              </span>
+            </div>
+          )}
+
           {/* Header */}
           <header className="mb-10 pb-8 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-2 mb-4 flex-wrap">
+              {isDraft && (
+                <span className="text-xs px-3 py-1 rounded-full font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 tracking-wide">
+                  DRAFT
+                </span>
+              )}
               {tags?.map(tag => (
                 <span key={tag} className={badgeClass(tag)}>
                   {tag}
@@ -199,7 +257,9 @@ const BlogPost = ({ data, children, location }: BlogPostProps) => {
           </header>
 
           {/* Thumbnail */}
-          {thumbnail && (() => {
+          {isDraft ? (
+            <DraftThumbnail className="w-full rounded-2xl mb-10 h-72" />
+          ) : thumbnail && (() => {
             const img = getImage(thumbnail.childImageSharp.gatsbyImageData)
             return img ? (
               <GatsbyImage
@@ -275,6 +335,7 @@ export const query = graphql`
         description
         tags
         author
+        draft
         thumbnail {
           childImageSharp {
             gatsbyImageData(width: 800, placeholder: BLURRED, formats: [AUTO, WEBP, AVIF])

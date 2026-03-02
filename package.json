@@ -21,6 +21,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@netlify/plugin-gatsby": "^3.8.4",
     "@types/node": "^25.3.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -44,13 +45,16 @@
     "msgpackr": "^1.11.2"
   },
   "scripts": {
+    "prebuild": "node scripts/generate-content-index.js",
     "build": "gatsby build",
-    "develop": "gatsby develop",
-    "develop:watch": "node watch-mdx.js",
+    "build:ci": "node scripts/generate-content-index.js && gatsby build",
+    "dev": "gatsby develop",
+    "dev:watch": "node watch-mdx.js",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,css}\"",
     "start": "gatsby develop",
     "serve": "gatsby serve",
-    "clean": "gatsby clean",
+    "clean": "gatsby clean && node -e \"const fs=require('fs'); const f='content/content-index.json'; if(fs.existsSync(f)) fs.unlinkSync(f);\"",
+    "index": "node scripts/generate-content-index.js",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1"
   },
   "repository": {

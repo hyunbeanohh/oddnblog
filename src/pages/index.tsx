@@ -433,6 +433,10 @@ const IndexPage = ({ data, location }: IndexPageProps) => {
     () => posts.filter(p => !p.frontmatter.draft).slice(0, 3),
     [posts]
   )
+  const popularPosts = React.useMemo(
+    () => allPosts.filter(p => !p.frontmatter.draft).slice(0, 3),
+    [allPosts]
+  )
   const showHero = !activeCategory && heroPosts.length > 0
 
   return (
@@ -466,7 +470,7 @@ const IndexPage = ({ data, location }: IndexPageProps) => {
           </section>
 
           <aside className="lg:col-span-1 space-y-4">
-            {allPosts.length > 0 && <PopularSidebar posts={allPosts} />}
+            {popularPosts.length > 0 && <PopularSidebar posts={popularPosts} />}
             <RecentCommentsSidebar />
           </aside>
         </div>

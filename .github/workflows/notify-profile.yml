@@ -1,24 +1,73 @@
-name: Notify Profile Repo on New Post
+name: Notify Profile Repo on Blog Changes
 
 on:
   push:
     branches:
       - main
-    paths:
-      # content/blog/ 하위에 변경이 생길 때만 트리거
-      - 'content/blog/**'
 
 jobs:
   dispatch:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Trigger profile repo update
+      - name: Collect blog file changes
+        id: changes
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
+          node <<'NODE'
+          const fs = require("fs")
+
+          const output = process.env.GITHUB_OUTPUT
+          const eventPath = process.env.GITHUB_EVENT_PATH
+          const payload = JSON.parse(fs.readFileSync(eventPath, "utf8"))
+          const commits = Array.isArray(payload.commits) ? payload.commits : []
+          const changed = new Set()
+          const removed = new Set()
+
+          for (const commit of commits) {
+            const added = Array.isArray(commit.added) ? commit.added : []
+            const modified = Array.isArray(commit.modified) ? commit.modified : []
+            const removedFiles = Array.isArray(commit.removed) ? commit.removed : []
+
+            for (const file of [...added, ...modified, ...removedFiles]) {
+              if (file.startsWith("content/blog/")) changed.add(file)
+            }
+            for (const file of removedFiles) {
+              if (file.startsWith("content/blog/")) removed.add(file)
+            }
+          }
+
+          const changedFiles = Array.from(changed).sort()
+          const removedFiles = Array.from(removed).sort()
+          const hasBlogChange = changedFiles.length > 0 ? "true" : "false"
+
+          fs.appendFileSync(output, `has_blog_change=${hasBlogChange}\n`)
+          fs.appendFileSync(output, `changed_count=${changedFiles.length}\n`)
+          fs.appendFileSync(output, `removed_count=${removedFiles.length}\n`)
+          fs.appendFileSync(output, `changed_files_json=${JSON.stringify(changedFiles)}\n`)
+          fs.appendFileSync(output, `removed_files_json=${JSON.stringify(removedFiles)}\n`)
+          NODE
+
+      - name: Trigger profile repo update
+        if: steps.changes.outputs.has_blog_change == 'true'
+        env:
+          PROFILE_REPO_TOKEN: ${{ secrets.PROFILE_REPO_TOKEN }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CHANGED_FILES_JSON: ${{ steps.changes.outputs.changed_files_json }}
+          REMOVED_FILES_JSON: ${{ steps.changes.outputs.removed_files_json }}
+          CHANGED_COUNT: ${{ steps.changes.outputs.changed_count }}
+          REMOVED_COUNT: ${{ steps.changes.outputs.removed_count }}
+        run: |
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST \
-            -H "Authorization: Bearer ${{ secrets.PROFILE_REPO_TOKEN }}" \
+            -H "Authorization: Bearer ${PROFILE_REPO_TOKEN}" \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Content-Type: application/json" \
             https://api.github.com/repos/hyunbeanohh/hyunbeanohh/dispatches \
-            -d '{"event_type":"blog-updated","client_payload":{"ref":"${{ github.ref }}","sha":"${{ github.sha }}"}}'
+            -d "{\"event_type\":\"blog-updated\",\"client_payload\":{\"ref\":\"${REF}\",\"sha\":\"${SHA}\",\"before\":\"${BEFORE_SHA}\",\"changed_count\":${CHANGED_COUNT},\"removed_count\":${REMOVED_COUNT},\"changed_files\":${CHANGED_FILES_JSON},\"removed_files\":${REMOVED_FILES_JSON}}}")
+
+          if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+            echo "repository_dispatch failed with HTTP ${status_code}"
+            exit 1
+          fi

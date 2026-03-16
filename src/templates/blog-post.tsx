@@ -169,11 +169,12 @@ const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
   const { isDraft } = pageContext
   const [popoverOpen, setPopoverOpen] = React.useState(false)
   const contentRef = React.useRef<HTMLDivElement>(null)
+  const tocRailRef = React.useRef<HTMLDivElement>(null)
 
   return (
     <Layout location={location}>
       <div className="py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-10 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-10 lg:gap-16 xl:gap-20 items-start">
           <article className="max-w-2xl w-full mx-auto min-w-0">
           {/* Back link */}
           <Link
@@ -286,7 +287,9 @@ const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
           <Comments />
           </article>
 
-          <TableOfContents contentRef={contentRef} />
+          <div ref={tocRailRef} className="relative lg:self-stretch">
+            <TableOfContents contentRef={contentRef} railRef={tocRailRef} />
+          </div>
         </div>
       </div>
     </Layout>

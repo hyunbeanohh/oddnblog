@@ -1,7 +1,8 @@
 import * as React from "react"
 
 interface TableOfContentsProps {
-  contentRef: React.RefObject<HTMLElement>
+  contentRef: React.RefObject<HTMLElement | null>
+  railRef: React.RefObject<HTMLElement | null>
 }
 
 interface TocItem {
@@ -30,7 +31,12 @@ const slugify = (value: string): string =>
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
 
-const TableOfContents = ({ contentRef }: TableOfContentsProps) => {
+const HEADER_HEIGHT = 60
+const DESKTOP_FLOAT_TOP_GAP = 24
+const DESKTOP_FLOAT_TOP = HEADER_HEIGHT + DESKTOP_FLOAT_TOP_GAP
+const DESKTOP_MIN_WIDTH = 1024
+
+const TableOfContents = ({ contentRef, railRef }: TableOfContentsProps) => {
   const [items, setItems] = React.useState<TocItem[]>([])
   const [groups, setGroups] = React.useState<TocGroup[]>([])
   const [activeId, setActiveId] = React.useState("")
@@ -48,6 +54,7 @@ const TableOfContents = ({ contentRef }: TableOfContentsProps) => {
 
   const desktopTocRef = React.useRef<HTMLElement>(null)
   const mobileTocRef = React.useRef<HTMLElement>(null)
+  const desktopCardRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     activeIdRef.current = activeId
@@ -283,6 +290,102 @@ const TableOfContents = ({ contentRef }: TableOfContentsProps) => {
   }, [items, contentRef])
 
   React.useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const card = desktopCardRef.current
+    const rail = railRef.current
+    if (!card || !rail) return
+
+    let rafId = 0
+    let currentTranslateY = 0
+    let targetTranslateY = 0
+
+    const isDesktopViewport = () => window.innerWidth >= DESKTOP_MIN_WIDTH
+
+    const clamp = (value: number, min: number, max: number) =>
+      Math.min(Math.max(value, min), max)
+
+    const apply = (value: number) => {
+      card.style.transform = `translate3d(0, ${value.toFixed(2)}px, 0)`
+    }
+
+    const animate = () => {
+      const delta = targetTranslateY - currentTranslateY
+      if (Math.abs(delta) <= 0.35) {
+        currentTranslateY = targetTranslateY
+        apply(currentTranslateY)
+        rafId = 0
+        return
+      }
+
+      currentTranslateY += delta * 0.18
+      apply(currentTranslateY)
+      rafId = window.requestAnimationFrame(animate)
+    }
+
+    const updateTarget = () => {
+      if (!isDesktopViewport()) {
+        targetTranslateY = 0
+        currentTranslateY = 0
+        apply(0)
+        if (rafId) {
+          window.cancelAnimationFrame(rafId)
+          rafId = 0
+        }
+        return
+      }
+
+      const railTop = rail.getBoundingClientRect().top + window.scrollY
+      const railBottom = railTop + rail.offsetHeight
+      const cardHeight = card.offsetHeight
+      const maxTop = Math.max(railTop, railBottom - cardHeight)
+      const desiredTop = window.scrollY + DESKTOP_FLOAT_TOP
+      const clampedTop = clamp(desiredTop, railTop, maxTop)
+      const cardTop = card.getBoundingClientRect().top + window.scrollY
+      const baseTop = cardTop - currentTranslateY
+
+      targetTranslateY = clampedTop - baseTop
+      if (!Number.isFinite(targetTranslateY)) {
+        targetTranslateY = 0
+      }
+
+      if (!rafId) {
+        rafId = window.requestAnimationFrame(animate)
+      }
+    }
+
+    updateTarget()
+
+    const onScroll = () => updateTarget()
+    const onResize = () => updateTarget()
+    const onLoad = () => updateTarget()
+    const onOrientationChange = () => updateTarget()
+
+    window.addEventListener("scroll", onScroll, { passive: true })
+    window.addEventListener("resize", onResize)
+    window.addEventListener("load", onLoad)
+    window.addEventListener("orientationchange", onOrientationChange)
+
+    const resizeObserver =
+      "ResizeObserver" in window
+        ? new ResizeObserver(() => updateTarget())
+        : null
+    resizeObserver?.observe(rail)
+    resizeObserver?.observe(card)
+
+    return () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId)
+      }
+      window.removeEventListener("scroll", onScroll)
+      window.removeEventListener("resize", onResize)
+      window.removeEventListener("load", onLoad)
+      window.removeEventListener("orientationchange", onOrientationChange)
+      resizeObserver?.disconnect()
+    }
+  }, [railRef, items.length])
+
+  React.useEffect(() => {
     if (!activeId) return
 
     const syncActiveItem = (container: HTMLElement | null) => {
@@ -442,7 +545,10 @@ const TableOfContents = ({ contentRef }: TableOfContentsProps) => {
       </div>
 
       <aside className="hidden lg:block">
-        <div className="sticky top-28 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm p-4">
+        <div
+          ref={desktopCardRef}
+          className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm p-4 will-change-transform"
+        >
           <p className="text-xs font-semibold tracking-wide text-gray-400 dark:text-gray-500 mb-3">
             목차
           </p>

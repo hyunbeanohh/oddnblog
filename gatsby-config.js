@@ -4,6 +4,7 @@
  * See: https://www.gatsbyjs.com/docs/reference/config-files/gatsby-config/
  */
 const rehypePrettyCode = require("rehype-pretty-code").default
+const remarkGfm = require("remark-gfm").default
 
 /**
  * @type {import('gatsby').GatsbyConfig}
@@ -50,6 +51,7 @@ module.exports = {
       options: {
         extensions: [`.mdx`, `.md`],
         mdxOptions: {
+          remarkPlugins: [remarkGfm],
           rehypePlugins: [
             [
               rehypePrettyCode,

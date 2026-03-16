@@ -127,6 +127,9 @@ interface BlogPostData {
       thumbnail?: ThumbnailNode
       draft?: boolean
     }
+    parent?: {
+      modifiedTimeRaw?: string
+    }
   }
 }
 
@@ -134,7 +137,7 @@ interface BlogPostProps {
   data: BlogPostData
   children: React.ReactNode
   location: { search?: string }
-  pageContext: { isDraft?: boolean }
+  pageContext: { isDraft?: boolean; readingTime?: number }
 }
 
 /* ── Draft thumbnail placeholder ───────────────────── */
@@ -164,9 +167,52 @@ const DraftThumbnail = ({ className }: { className?: string }) => (
   </div>
 )
 
+const formatLastModified = (value?: string) => {
+  if (!value) return null
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  if (typeof Intl !== "undefined" && Intl.DateTimeFormat) {
+    const parts = new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).formatToParts(date)
+
+    const get = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find(part => part.type === type)?.value ?? ""
+
+    const year = get("year")
+    const month = get("month")
+    const day = get("day")
+    const dayPeriod = get("dayPeriod")
+    const hour = get("hour")
+    const minute = get("minute")
+
+    if (year && month && day && hour && minute) {
+      return `${year}년 ${month}월 ${day}일 ${dayPeriod || ""} ${hour}:${minute}`.trim()
+    }
+  }
+
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hour24 = date.getHours()
+  const minute = String(date.getMinutes()).padStart(2, "0")
+  const isAm = hour24 < 12
+  const hour12 = hour24 % 12 || 12
+
+  return `${year}년 ${month}월 ${day}일 ${isAm ? "오전" : "오후"} ${hour12}:${minute}`
+}
+
 const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
   const { title, date, description, tags, author, thumbnail } = data.mdx.frontmatter
-  const { isDraft } = pageContext
+  const lastModifiedText = formatLastModified(data.mdx.parent?.modifiedTimeRaw)
+  const { isDraft, readingTime } = pageContext
   const [popoverOpen, setPopoverOpen] = React.useState(false)
   const contentRef = React.useRef<HTMLDivElement>(null)
   const tocRailRef = React.useRef<HTMLDivElement>(null)
@@ -258,6 +304,59 @@ const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
                 )}
               </div>
             </div>
+
+            {(lastModifiedText || readingTime) && (
+              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="grid gap-y-2 text-[0.8125rem] sm:text-sm">
+                  {lastModifiedText && (
+                    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+                      <div className="inline-flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <span className="font-medium">수정시간</span>
+                      </div>
+                      <p className="m-0 text-gray-700 dark:text-gray-200 break-words">
+                        {lastModifiedText}
+                      </p>
+                    </div>
+                  )}
+                  {readingTime && (
+                    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+                      <div className="inline-flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                        </svg>
+                        <span className="font-medium">읽는 시간</span>
+                      </div>
+                      <p className="m-0 text-gray-700 dark:text-gray-200">{readingTime}분</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </header>
 
           {/* Thumbnail */}
@@ -352,6 +451,11 @@ export const query = graphql`
           childImageSharp {
             gatsbyImageData(width: 800, placeholder: BLURRED, formats: [AUTO, WEBP, AVIF])
           }
+        }
+      }
+      parent {
+        ... on File {
+          modifiedTimeRaw: modifiedTime
         }
       }
     }

@@ -194,3 +194,8 @@ html.is-theme-transitioning *::after {
 [data-theme="dark"] .prose li::marker {
   color: #94a3b8;
 }
+
+/* Override Tailwind spacing utility */
+.pb-8 {
+  padding-bottom: 1rem;
+}

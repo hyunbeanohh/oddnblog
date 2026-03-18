@@ -7,11 +7,24 @@ const CATEGORIES = ["Engineering", "Design", "Product"]
 
 interface PostNode {
   id: string
+  parent?: { name?: string; relativeDirectory?: string } | null
   frontmatter: {
     title?: string
     tags?: string[]
+    draft?: boolean
   }
   excerpt?: string
+}
+
+interface SearchablePost {
+  post: PostNode
+  searchableText: string
+}
+
+const getPostSlug = (post: PostNode) => {
+  const dir = post.parent?.relativeDirectory
+  const base = post.frontmatter.draft ? "draft" : "blog"
+  return dir ? `/${base}/${dir}` : post.parent?.name ? `/${base}/${post.parent.name}` : "/"
 }
 
 /* ── SVG icons ─────────────────────────────────────── */
@@ -110,12 +123,19 @@ const Header = ({ siteTitle, location }: HeaderProps) => {
 
   const data = useStaticQuery(graphql`
     query HeaderSearchQuery {
-      allMdx {
+      allMdx(filter: { frontmatter: { draft: { ne: true } } }) {
         nodes {
           id
+          parent {
+            ... on File {
+              name
+              relativeDirectory
+            }
+          }
           frontmatter {
             title
             tags
+            draft
           }
           excerpt(pruneLength: 80)
         }
@@ -125,6 +145,7 @@ const Header = ({ siteTitle, location }: HeaderProps) => {
   const allPosts: PostNode[] = data?.allMdx?.nodes ?? []
 
   const [searchOpen, setSearchOpen] = React.useState(false)
+  const [searchInput, setSearchInput] = React.useState("")
   const [searchQuery, setSearchQuery] = React.useState("")
   const inputRef = React.useRef<HTMLInputElement>(null)
 
@@ -133,15 +154,28 @@ const Header = ({ siteTitle, location }: HeaderProps) => {
     return new URLSearchParams(location.search).get("category")
   }, [location?.search])
 
+  React.useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(searchInput), 150)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
+  const searchablePosts = React.useMemo<SearchablePost[]>(
+    () =>
+      allPosts.map(post => ({
+        post,
+        searchableText: `${post.frontmatter.title ?? ""} ${post.excerpt ?? ""}`.toLowerCase(),
+      })),
+    [allPosts]
+  )
+
   const searchResults = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return []
-    return allPosts.filter(
-      p =>
-        p.frontmatter.title?.toLowerCase().includes(q) ||
-        p.excerpt?.toLowerCase().includes(q)
-    )
-  }, [searchQuery, allPosts])
+    return searchablePosts
+      .filter(item => item.searchableText.includes(q))
+      .slice(0, 10)
+      .map(item => item.post)
+  }, [searchQuery, searchablePosts])
 
   React.useEffect(() => {
     if (!searchOpen) return
@@ -159,6 +193,7 @@ const Header = ({ siteTitle, location }: HeaderProps) => {
 
   const closeSearch = () => {
     setSearchOpen(false)
+    setSearchInput("")
     setSearchQuery("")
   }
 
@@ -265,8 +300,8 @@ const Header = ({ siteTitle, location }: HeaderProps) => {
                 ref={inputRef}
                 type="text"
                 placeholder="검색어를 입력하세요..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
                 className="flex-1 text-base border-0 outline-none text-gray-900 dark:text-gray-100 bg-transparent placeholder-gray-400 dark:placeholder-gray-600"
               />
               <button
@@ -283,7 +318,7 @@ const Header = ({ siteTitle, location }: HeaderProps) => {
                 {searchResults.map(post => (
                   <li key={post.id}>
                     <Link
-                      to={`/blog/${post.id}`}
+                      to={getPostSlug(post)}
                       onClick={closeSearch}
                       className="w-full text-left px-5 py-3 block hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
@@ -299,10 +334,10 @@ const Header = ({ siteTitle, location }: HeaderProps) => {
                   </li>
                 ))}
               </ul>
-            ) : searchQuery.trim() ? (
+            ) : searchInput.trim() ? (
               <div className="py-10 px-6 text-center text-sm text-gray-400 dark:text-gray-500">
                 <span className="text-gray-900 dark:text-gray-100 font-semibold">
-                  &ldquo;{searchQuery}&rdquo;
+                  &ldquo;{searchInput}&rdquo;
                 </span>
                 에 대한 결과가 없습니다.
               </div>

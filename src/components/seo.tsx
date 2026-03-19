@@ -7,10 +7,19 @@ interface SeoProps {
   pathname?: string
   image?: string
   type?: "website" | "article"
+  robots?: string
   children?: React.ReactNode
 }
 
-function Seo({ description, title, pathname, image, type = "website", children }: SeoProps) {
+function Seo({
+  description,
+  title,
+  pathname,
+  image,
+  type = "website",
+  robots = "index,follow",
+  children,
+}: SeoProps) {
   const { site } = useStaticQuery(
     graphql`
       query {
@@ -37,6 +46,11 @@ function Seo({ description, title, pathname, image, type = "website", children }
       <title>{defaultTitle ? `${title} | ${defaultTitle}` : title}</title>
       <link rel="canonical" href={canonicalUrl} />
       <meta name="description" content={metaDescription} />
+      <meta name="robots" content={robots} />
+      <meta
+        name="google-site-verification"
+        content="EK1ZEYzDdGlQadzLMP0b55kKcLLYtZ0JXDDYEUhcqhw"
+      />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={metaDescription} />
       <meta property="og:type" content={type} />

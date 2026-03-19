@@ -170,7 +170,7 @@ const DraftIndexPage = ({ data, location }: DraftIndexPageProps) => {
 }
 
 export const Head = ({ location }: { location: { pathname: string } }) => (
-  <Seo title="임시 글 목록" pathname={location.pathname} />
+  <Seo title="임시 글 목록" pathname={location.pathname} robots="noindex,nofollow" />
 )
 
 export const query = graphql`

@@ -110,6 +110,7 @@ const ProfilePopover = ({ onClose }: { onClose: () => void }) => {
 
 /* ── Blog post template ────────────────────────────── */
 interface ThumbnailNode {
+  publicURL?: string
   childImageSharp: {
     gatsbyImageData: IGatsbyImageData
   }
@@ -432,7 +433,12 @@ export const Head = ({
   data: BlogPostData
   location: { pathname: string }
 }) => {
-  const { title, description, dateRaw, author } = data.mdx.frontmatter
+  const { title, description, dateRaw, author, thumbnail, draft } = data.mdx.frontmatter
+  const siteUrl = "https://oddn.ai.kr"
+  const thumbnailPath = thumbnail?.publicURL
+  const thumbnailUrl = thumbnailPath
+    ? `${siteUrl}${thumbnailPath.charAt(0) === "/" ? thumbnailPath : `/${thumbnailPath}`}`
+    : `${siteUrl}/profile.jpeg`
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -443,14 +449,14 @@ export const Head = ({
     author: {
       "@type": "Person",
       name: author || "오또니",
-      url: "https://oddn.ai.kr",
+      url: siteUrl,
     },
-    url: `https://oddn.ai.kr${location.pathname}`,
-    image: "https://oddn.ai.kr/profile.jpeg",
+    url: `${siteUrl}${location.pathname}`,
+    image: thumbnailUrl,
     publisher: {
       "@type": "Person",
       name: "오또니",
-      url: "https://oddn.ai.kr",
+      url: siteUrl,
     },
   }
 
@@ -459,7 +465,9 @@ export const Head = ({
       title={title ?? ""}
       description={description}
       pathname={location.pathname}
+      image={thumbnailUrl}
       type="article"
+      robots={draft ? "noindex,nofollow" : "index,follow"}
     >
       <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
     </Seo>
@@ -479,6 +487,7 @@ export const query = graphql`
         author
         draft
         thumbnail {
+          publicURL
           childImageSharp {
             gatsbyImageData(width: 800, placeholder: BLURRED, formats: [AUTO, WEBP, AVIF])
           }

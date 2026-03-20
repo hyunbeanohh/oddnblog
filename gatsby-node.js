@@ -39,12 +39,17 @@ const estimateReadingMinutes = source => {
 exports.createSchemaCustomization = ({ actions }) => {
   const { createTypes } = actions
   createTypes(`
+    type MdxReference {
+      label: String
+      url: String!
+    }
+
     type MdxFrontmatter {
       title: String
       date: Date @dateformat
       description: String
       tags: [String]
-      references: [String]
+      references: [MdxReference]
       author: String
       thumbnail: File @fileByRelativePath
       draft: Boolean

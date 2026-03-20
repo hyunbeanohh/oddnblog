@@ -124,7 +124,7 @@ interface BlogPostData {
       dateRaw?: string
       description?: string
       tags?: string[]
-      references?: string[]
+      references?: { label?: string; url?: string }[]
       author?: string
       thumbnail?: ThumbnailNode
       draft?: boolean
@@ -211,14 +211,37 @@ const formatLastModified = (value?: string) => {
   return `${year}년 ${month}월 ${day}일 ${isAm ? "오전" : "오후"} ${hour12}:${minute}`
 }
 
-const getReferenceCount = (references?: string[]) =>
-  references?.filter(reference => reference.trim().length > 0).length ?? 0
+type ReferenceMeta = {
+  label: string
+  url: string
+}
+
+const getReferenceBadgeLabel = (url: string) => {
+  const withoutProtocol = url.replace(/^[a-z]+:\/\//i, "")
+  const hostWithPath = withoutProtocol.split("/")[0]
+  const host = hostWithPath.replace(/^www\./i, "")
+  return host || url
+}
+
+const MAX_REFERENCE_BADGES = 3
+
+const getReferences = (references?: { label?: string; url?: string }[]): ReferenceMeta[] =>
+  references?.reduce<ReferenceMeta[]>((acc, reference) => {
+    const url = reference.url?.trim() ?? ""
+    if (!url) return acc
+
+    const label = reference.label?.trim() || getReferenceBadgeLabel(url)
+    acc.push({ label, url })
+    return acc
+  }, []) ?? []
 
 const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
   const { title, date, description, tags, references, author, thumbnail } = data.mdx.frontmatter
   const lastModifiedText = formatLastModified(data.mdx.parent?.modifiedTimeRaw)
   const { isDraft, readingTime } = pageContext
-  const referenceCount = getReferenceCount(references)
+  const normalizedReferences = getReferences(references)
+  const visibleReferences = normalizedReferences.slice(0, MAX_REFERENCE_BADGES)
+  const hiddenReferenceCount = Math.max(0, normalizedReferences.length - visibleReferences.length)
   const [popoverOpen, setPopoverOpen] = React.useState(false)
   const contentRef = React.useRef<HTMLDivElement>(null)
   const tocRailRef = React.useRef<HTMLDivElement>(null)
@@ -311,7 +334,7 @@ const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
               </div>
             </div>
 
-            {(lastModifiedText || readingTime || referenceCount > 0) && (
+            {(lastModifiedText || readingTime || normalizedReferences.length > 0) && (
               <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
                 <div className="grid gap-y-2 text-[0.8125rem] sm:text-sm">
                   {lastModifiedText && (
@@ -360,7 +383,7 @@ const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
                       <p className="m-0 text-gray-700 dark:text-gray-200">{readingTime}분</p>
                     </div>
                   )}
-                  {referenceCount > 0 && (
+                  {normalizedReferences.length > 0 && (
                     <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
                       <div className="inline-flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                         <svg
@@ -382,7 +405,24 @@ const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
                         </svg>
                         <span className="font-medium">레퍼런스</span>
                       </div>
-                      <p className="m-0 text-gray-700 dark:text-gray-200">{referenceCount}개</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {visibleReferences.map(reference => (
+                          <a
+                            key={`${reference.url}:${reference.label}`}
+                            href={reference.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[0.75rem] leading-5 text-gray-700 hover:border-gray-300 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200 dark:hover:border-gray-500 dark:hover:text-white transition-colors"
+                          >
+                            {reference.label}
+                          </a>
+                        ))}
+                        {hiddenReferenceCount > 0 && (
+                          <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[0.75rem] leading-5 text-gray-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-300">
+                            +{hiddenReferenceCount}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -483,7 +523,10 @@ export const query = graphql`
         dateRaw: date
         description
         tags
-        references
+        references {
+          label
+          url
+        }
         author
         draft
         thumbnail {

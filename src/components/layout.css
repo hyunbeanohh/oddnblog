@@ -12,7 +12,8 @@
   --color-border: #e5e7eb;
   --color-border-light: #f3f4f6;
   --color-code-bg: #f3f4f6;
-  --color-code: #7026b9;
+  --color-code: #334155;
+  --color-code-block: #1f2937;
   --color-header-bg: rgba(255, 255, 255, 0.95);
   --color-header-border: #f3f4f6;
   --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -124,6 +125,18 @@ pre code {
   border-radius: 0;
 }
 
+.prose :not(pre) > code {
+  color: var(--color-code);
+}
+
+.prose pre {
+  color: var(--color-code-block);
+}
+
+.prose pre code {
+  color: inherit;
+}
+
 blockquote {
   border-left: 3px solid var(--color-primary);
   padding-left: var(--space-4);
@@ -172,6 +185,7 @@ abbr[title] {
   --color-border-light: #1f2937;
   --color-code-bg: #1f2937;
   --color-code: #c084fc;
+  --color-code-block: #e5e7eb;
   --color-header-bg: rgba(17, 24, 39, 0.95);
   --color-header-border: #1f2937;
 }

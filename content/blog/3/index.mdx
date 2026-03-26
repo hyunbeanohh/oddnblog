@@ -1,0 +1,118 @@
+---
+title: "Vite 환경에서 임베디드 배포를 위한 Vite 번들 구조 단순화하기"
+date: "2026-03-26"
+description: 여러 파일 경로를 관리해야 하던 Vite 빌드 결과물을 단순화해, 외부 페이지 임베디드 경험을 개선한 과정을 소개합니다.
+tags: ["Engineering", "FrontEnd"]
+references:
+  - label: Vite
+    url: https://ko.vite.dev/guide/build.html#chunking-strategy
+  - label: RollUp
+    url: https://rollupjs.org/configuration-options/#output-manualchunks
+author: 오또니
+thumbnail: ./thumbnail.png
+---
+
+## 개요
+
+진행 중인 프로젝트에서 외부 라이브러리를 사용하고 있었고, 해당 라이브러리는 WASM 파일에 의존하고 있었다. 문제는 이 WASM 파일의 용량이 30MB를 넘어서면서 네트워크 리소스를 크게 사용한다는 점이었다. 그래서 다른 네트워크 사용량도 함께 줄일 수 있는지 분석이 필요하다고 판단했다.
+
+분석을 진행해보니, 빌드된 프로젝트의 `index.html`이 멀티 청크 구조로 분리되어 있었고 그만큼 네트워크 요청도 여러 번 발생하고 있었다. 이 부분을 개선하면 초기 로드 속도도 함께 나아질 수 있겠다고 판단했다.
+
+또 하나의 불만은 배포된 결과물을 다른 페이지에 임베디드할 때 사용자가 알아야 하는 파일 수가 너무 많다는 점이었다. 사용자는 가능한 한 1~2개의 파일만으로 제품을 페이지에 붙이고 싶어 하는데, 여러 파일을 관리하게 되면 실수가 발생할 가능성이 높다. 이 문제 역시 개선이 필요했다.
+
+## 분석
+
+현재 프로젝트는 TypeScript와 Vite 기반으로 구성되어 있다. 그런데 Vite 환경으로 빌드한 결과물의 `index.html`은 단일 번들이 아니라 여러 청크를 `import`하는 구조였다. 이 때문에 사용자가 크로스 뷰어를 다른 페이지에서 가져다 쓰기 번거로운 상황이었다.
+
+원인은 `manualChunks` 설정으로 `mobile`, `utils`, `vendor` 청크를 나누고 있었고, `publicApi` 엔트리도 별도로 관리하고 있었기 때문이다. 그 결과 총 4~5개의 파일이 생성되고 있었다.
+
+## 개선 방향
+
+Vite 설정을 아래와 같이 수정하면 여러 청크를 생성하지 않고 하나의 번들 중심으로 관리할 수 있다.
+
+1. `manualChunks` 제거
+   청크 분리를 해제한다.
+2. `cssCodeSplit: false`
+   CSS도 단일 결과물로 관리한다.
+3. 엔트리 포인트 통합
+   엔트리를 하나로 모아 출력 파일 수를 줄인다.
+
+이렇게 하면 결과적으로 `main-[hash].js`와 `style-[hash].css` 정도만 남게 된다.
+
+하지만 CSS 용량이 크지 않았기 때문에, 최종 목표는 사용자가 하나의 `script`만 `import`하면 되도록 만드는 것이었다. 따라서 CSS를 별도 파일로 남기지 않고 JS 내부에 인라인하는 추가 처리가 필요했다.
+
+외부 의존성을 추가하지 않고, 커스텀 Vite 플러그인을 적용해 CSS를 JS 안에 주입하는 방식으로 수정했다.
+
+```ts
+import type { Plugin } from 'vite';
+
+function cssInjectedByJs(): Plugin {
+  return {
+    name: 'css-injected-by-js',
+    enforce: 'post',
+    generateBundle(_, bundle) {
+      const cssAssets: string[] = [];
+
+      // CSS 에셋 수집 후 번들에서 제거
+      for (const [key, chunk] of Object.entries(bundle)) {
+        if (key.endsWith('.css') && chunk.type === 'asset') {
+          cssAssets.push(String(chunk.source));
+          delete bundle[key];
+        }
+      }
+
+      if (cssAssets.length === 0) return;
+
+      // 엔트리 JS에 CSS 주입 코드 삽입
+      const cssCode = cssAssets
+        .join('\n')
+        .replace(/`/g, '\\`')
+        .replace(/\\/g, '\\\\');
+
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type === 'chunk' && chunk.isEntry) {
+          chunk.code =
+            `(function(){var s=document.createElement('style');s.textContent=\`${cssCode}\`;document.head.appendChild(s)})();\n` +
+            chunk.code;
+        }
+      }
+    },
+  };
+}
+```
+
+## 결과
+
+이전에는 아래와 같이 멀티 청크 형태로 결과물이 생성됐다.
+
+### Before
+
+- `assets/main-[hash].js` (엔트리)
+- `assets/utils-[hash].js` (유틸 및 i18n)
+- `assets/mobile-[hash].js` (모바일 전용 코드)
+- `assets/publicApi-[hash].js` (Public API)
+- `assets/style-[hash].css` (별도 CSS)
+
+### After
+
+- `assets/main-[hash].js`
+
+정리하면 다음과 같다.
+
+| 항목 | Before | After | 효과 |
+| --- | --- | --- | --- |
+| import 파일 수 | 5개 | 1개 | 배포 및 통합 단순화 |
+| HTTP 요청 수 | 5회 | 1회 | 초기 로드 네트워크 왕복 감소 |
+| HTML 태그 | `<script>` 1개 + `<link modulepreload>` 3개 + `<link stylesheet>` 1개 | `<script>` 1개 | 사용자가 관리할 태그 최소화 |
+| CSS 관리 | 별도 파일 참조 필요 | JS에 인라인, 자동 주입 | CSS 누락 가능성 제거 |
+| 배포 복잡도 | 5개 파일 경로를 모두 정확히 맞춰야 함 | 1개 파일만 배치 | 배포 실수 감소 |
+| 캐시 무효화 | 일부 청크만 변경 가능 | 전체 무효화 | 단점이지만 파일 크기가 작아 영향은 크지 않음 |
+| 총 번들 크기 | 약 287KB | 약 286KB | 멀티 청크와 거의 동일, 오히려 오버헤드 제거로 미세 감소 |
+
+## 정리
+
+WASM 파일의 초기 로드 속도를 조금이라도 빠르게 개선하고자 작업을 시작했지만, 외부 런타임에 해당하는 라이브러리 모듈 자체의 초기 로드 속도를 직접 개선하는 것은 어려웠다.
+
+대신 멀티 청크로 나뉘던 빌드 구조를 단일 번들로 정리하면서, 다른 페이지에 제품을 임베디드하는 사용자 경험을 더 단순하게 만들 수 있었다. 특히 사용자는 여러 파일 경로를 관리할 필요 없이 하나의 스크립트만 추가하면 되기 때문에 통합 과정에서의 실수 가능성도 줄일 수 있다.
+
+결과적으로 이번 개선은 WASM 자체 최적화에는 직접적인 해답이 되지 못했지만, 배포 구조와 임베디드 경험 측면에서는 분명한 개선 효과가 있었다. 이후에는 외부 라이브러리의 런타임 로딩 방식이나 WASM 로드 전략 자체를 다른 방향에서 더 분석해서 개선할 수 있으면 개선해봐야겠다.

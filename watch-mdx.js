@@ -1,5 +1,5 @@
 /**
- * MDX 파일 변경 감지 시 gatsby develop 자동 실행
+ * 콘텐츠/프런트엔드 파일 변경 감지 시 gatsby develop 자동 실행
  * 사용법:
  *   npm run dev:watch        // 빠른 재시작 (기본)
  *   npm run dev:watch:clean  // 매 재시작 전에 clean 수행
@@ -24,6 +24,13 @@ function startGatsby() {
     log("기존 Gatsby 프로세스를 종료합니다...")
     gatsbyProcess.kill("SIGTERM")
     gatsbyProcess = null
+  }
+
+  log("개발 캐시 준비 중...")
+  try {
+    execSync("node scripts/prepare-gatsby-dev-cache.js", { stdio: "inherit", cwd: ROOT })
+  } catch {
+    // 캐시 준비 실패 시에도 develop 재시도
   }
 
   if (shouldClean) {
@@ -58,8 +65,17 @@ function scheduleRestart(filePath) {
   }, 500)
 }
 
-// MDX 파일 감시
-const watcher = chokidar.watch(path.join(ROOT, "content/**/*.{md,mdx}"), {
+const watchTargets = [
+  path.join(ROOT, "content/**/*.{md,mdx}"),
+  path.join(ROOT, "src/**/*.{js,jsx,ts,tsx,css}"),
+  path.join(ROOT, "global.css"),
+  path.join(ROOT, "gatsby-*.{js,ts}"),
+  path.join(ROOT, "tailwind.config.{js,ts}"),
+  path.join(ROOT, "postcss.config.{js,cjs,mjs,ts}"),
+]
+
+// 콘텐츠/프런트엔드 파일 감시
+const watcher = chokidar.watch(watchTargets, {
   ignoreInitial: true,
   persistent: true,
 })
@@ -72,7 +88,7 @@ watcher.on("all", (event, filePath) => {
   scheduleRestart(filePath)
 })
 
-log("콘텐츠 파일 감시를 시작합니다. (content/**/*.{md,mdx})")
+log("개발 파일 감시를 시작합니다. (content, src, global.css, Gatsby config)")
 
 // 최초 gatsby develop 실행
 startGatsby()

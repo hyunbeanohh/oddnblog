@@ -247,10 +247,11 @@ const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
   const tocRailRef = React.useRef<HTMLDivElement>(null)
 
   return (
-    <Layout location={location}>
+    <Layout location={location} containerClassName="max-w-[120rem]">
       <div className="py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-10 lg:gap-16 xl:gap-20 items-start">
-          <article className="max-w-2xl w-full mx-auto min-w-0">
+        <div className="grid grid-cols-1 xl:grid-cols-[18rem_minmax(0,56rem)_18rem] justify-center gap-10 xl:gap-10 items-start">
+          <div className="hidden xl:block" aria-hidden="true" />
+          <article className="max-w-4xl w-full min-w-0 xl:col-start-2 xl:mx-auto">
           {/* Back link */}
           <Link
             to={isDraft ? "/draft" : "/"}
@@ -457,7 +458,7 @@ const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
           <Comments />
           </article>
 
-          <div ref={tocRailRef} className="relative lg:self-stretch">
+          <div ref={tocRailRef} className="relative lg:self-stretch xl:col-start-3">
             <TableOfContents contentRef={contentRef} railRef={tocRailRef} />
           </div>
         </div>

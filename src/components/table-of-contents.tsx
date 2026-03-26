@@ -528,7 +528,7 @@ const TableOfContents = ({ contentRef, railRef }: TableOfContentsProps) => {
 
   return (
     <>
-      <div className="lg:hidden mb-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60">
+      <div className="xl:hidden mb-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60">
         <button
           type="button"
           onClick={() => setMobileOpen(prev => !prev)}
@@ -544,7 +544,7 @@ const TableOfContents = ({ contentRef, railRef }: TableOfContentsProps) => {
         {mobileOpen && <div id="mobile-toc">{renderList("mobile")}</div>}
       </div>
 
-      <aside className="hidden lg:block">
+      <aside className="hidden xl:block">
         <div
           ref={desktopCardRef}
           className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm p-4 will-change-transform"

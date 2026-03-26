@@ -8,6 +8,7 @@ import "./layout.css"
 interface LayoutProps {
   children: React.ReactNode
   location?: { search?: string }
+  containerClassName?: string
 }
 
 const SunIcon = () => (
@@ -66,7 +67,7 @@ const ThemeToggle = () => {
   )
 }
 
-const Layout = ({ children, location }: LayoutProps) => {
+const Layout = ({ children, location, containerClassName }: LayoutProps) => {
   const data = useStaticQuery(graphql`
     query SiteTitleQuery {
       site {
@@ -83,7 +84,9 @@ const Layout = ({ children, location }: LayoutProps) => {
         siteTitle={data.site.siteMetadata?.title || `Title`}
         location={location}
       />
-      <div className="max-w-5xl mx-auto px-6 min-h-[calc(100vh-60px)] flex flex-col">
+      <div
+        className={`${containerClassName ?? "max-w-5xl"} mx-auto px-6 min-h-[calc(100vh-60px)] flex flex-col`}
+      >
         <main className="flex-1">{children}</main>
         <footer className="mt-16 pt-6 pb-8 border-t border-gray-100 dark:border-gray-800 flex justify-center items-center flex-wrap gap-2 text-sm text-gray-400 dark:text-gray-500 text-center">
           <span>© {new Date().getFullYear()} 오또니 블로그</span>

@@ -4,15 +4,15 @@ date: "2026-03-24"
 description: React에서 컴포넌트가 렌더링이 될 때마다 어떻게 탐지할 수 있는지 연구해봅니다.
 tags: ["Engineering", "FrontEnd"]
 author: 오또니
-thumbnail:
-draft: true
 ---
 
 ## 개요
 리액트 관련 질문을 받았는데 리액트에서 컴포넌트가 계속 렌더링 될 수 있는 오류가 있을 경우 개발자가 어떻게 알아채고, 개선할 수 있는 방법이 무엇이 있는지 알고 있냐는 질문을 받았다.
 그 당시에는 크롬 브라우저인 React Development tools 를 사용해서 확인하면 될 거 같다고 생각했는데 시간이 지나면서 그 외에 더 다른 방법이 없는지 궁금해져서 이번 글을 작성하게 됐다.
 
-## 1. 함수 컴포넌트에서 렌더링된다
+## 어떻게 답변할 수 있을까?
+
+### 1. 함수 컴포넌트에서 렌더링된다
 리액트에서는 요즘 클래스 컴포넌트는 권장되지 않기 때문에 함수형 컴포넌트를 많이 사용할텐데 함수 컴포넌트로 만들어진 컴포넌트는 함수가 호출될 때 마다 렌더된다.
 ```js
 function MyComponent(props) {
@@ -23,9 +23,9 @@ function MyComponent(props) {
 위 코드는 컴포넌트 함수가 실행됐고 `console.log('render')`가 실행된 것을 알 수 있지만, 실제 화면에 반영됐는지를 알 수 없고
 React StrictMode에서는 의도적으로 호출이 더 될 수 있고 함수의 추적이 어렵기 때문에 명확한 답변은 될 수 없다.
 
-## 2. 실제로 반영된 후를 감지하자.
+### 2. 실제로 반영된 후를 감지하자.
 렌더 이후의 DOM 시점을 보고 싶다면 `useEffect` 와 `useLayoffEffect`를 사용해보자.
-보통 `useEffect`를 아래와 같이 많아 사용한다.
+보통 `useEffect`를 아래와 같이 많이 사용한다.
 ```js
 import { useEffect, useRef } from 'react';
 
@@ -41,10 +41,10 @@ function MyComponent() {
   return <div>hello</div>;
 }
 ```
-이 코드의 의미는 함수 본문 실행 -> 렌더 단계, `useEffect`실행 -> 브라우저 paint 이후 단계 실행 수행한다.
+이 코드의 의미는 `함수 본문 실행` -> `렌더 단계`, `useEffect 실행` -> `브라우저 paint` 이후 단계 실행 수행한다.
 즉, 렌더링이 일어났는지 알 수 있는 직관적인 방법중에 하나는 render count를 추가하고 `useEffect`에서 측정하는 것이다.
 
-### 2.1 useLayoffEffect는 언제 사용할까?
+#### 2.1 useLayoffEffect는 언제 사용할까?
 ```js
 useLayoutEffect(() => {
   console.log('DOM updated before paint');
@@ -53,7 +53,7 @@ useLayoutEffect(() => {
 `useLayoffEffect`는 DOM 반영 직후, 브라우저가 그리기 전에 실행된다.
 즉, 브라우저의 레이아웃 측정이나 DOM 크기를 확인하는데 필요하다.
 
-## 3. 렌더링 횟수를 감지하는 패턴
+### 3. 렌더링 횟수를 감지하는 패턴
 답변으로 가장 깔끔한 형태 가운데 하나는 `useRef`를 사용하는 것이다.
 ```js
 import { useEffect, useRef } from 'react';
@@ -72,7 +72,7 @@ function MyComponent() {
 `useRef`를 사용하게 되면 값이 바뀌지 않고 바뀌어도 리렌더링이 발생하지 않는다. 즉, 렌더 횟수를 측정하기 적합하다.
 
 
-## 4. 렌더 된 이유를 추적하고자 한다면 `props`,`state`를 통해 이전 값과 비교해보자
+### 4. 렌더 된 이유를 추적하고자 한다면 `props`,`state`를 통해 이전 값과 비교해보자
 실무나 면접에서 렌더가 됐는지 확인했다면 꼬리 질문으로 왜 렌더가 됐는지 추적할 수 있는 방법에 대해서 질문이 있을 수도 있다.
 ```js
 import { useEffect, useRef } from 'react';
@@ -108,3 +108,65 @@ function ProfileCard(props) {
 }
 ```
 해당 코드를 해석하자면 어떤 prop이 바뀌었는지, 불피요한 렌더가 있었는지 함수,객체가 참조가 계속 생성되는지를 확인할 수 있다.
+
+### 5. 가장 편하고 실무적인 방법은 React DevTools Profiler
+지금도 자주 사용하고 있는 확장 프로그램이며 많은 개발자들이 사용하고 있는 `React DevTools Profiler`이다. 
+이 확장 프로그램은 크롬이나 엣지 같은 모던 브라우저인에서 설치해서 사용할 수 있고 어떤 컴포넌트가 언제 렌더가 됐는지 확인할 수 있다 
+또한, 어떤 상호작용 때문에 렌더가 됐는지 쉽게 알 수 있으며 큰 렌더 비용이 드는 컴포넌트를 알 수 있다.
+
+### 6. 커스텀 hook 을 통한 확인
+커스텀 hook 을 만들어서 렌더링을 탐지할 수도 있다.
+```js
+import { useEffect, useRef } from 'react';
+
+export function useRenderTracker(name, props = {}) {
+  const renderCount = useRef(0);
+  const prevProps = useRef(props);
+
+  renderCount.current += 1;
+
+  useEffect(() => {
+    const changedProps = {};
+    const keys = Object.keys({ ...prevProps.current, ...props });
+
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      if (prevProps.current[key] !== props[key]) {
+        changedProps[key] = {
+          prev: prevProps.current[key],
+          next: props[key],
+        };
+      }
+    }
+
+    console.log(`[${name}] render #${renderCount.current}`);
+
+    if (Object.keys(changedProps).length > 0) {
+      console.log(`[${name}] changed props:`, changedProps);
+    }
+
+    prevProps.current = props;
+  });
+}
+```
+이 커스텀 hook은 지금까지 설명했던 `useRef와` `renderCounter`, `useEffect`, `props를` 모두 활용해서 컴포넌트의 렌터를 탐색,추적할 수 있다.
+
+```js
+function UserCard(props) {
+  useRenderTracker('UserCard', props);
+
+  return <div>{props.name}</div>;
+}
+```
+
+다른 방식으로는 컴포넌트에 추적 Wrapper를 추가해서 확인할 수 있는데 해당 방식은 컴포넌트 계층이 복잡해질 수 있기 때문에 커스텀 hook 이나 `React DevTools Profiler`를 주도적으로 사용하는게 좋다.
+
+## 정리
+지금까지 내용을 정리하자면 아래와 같다.
+- 렌더 감지는 함수 실행, effect 실행, Profiler로 나눠서 봐야 함
+- 공통 추적은 wrapper/HOC도 가능
+- 하지만 보통은 custom hook + Profiler가 더 실용적
+- “왜 렌더됐는지”까지 말해야 질문자가 납득하기 쉬움
+
+React 를 실무에서 사용하면서 렌더링을 어떻게 추적, 탐색을 하는지 계속 고민을 해왔는데 이번 기회에 정리를 해보니 어느정도 가이드라인이 생긴 것 같아서 도움이 됐다.
+실무에도 적용해 볼 수 있으면 적용하여 컴포넌트 계층이 복잡해지거나 비용이 많이드는 상황이 생기면 적절한 상황에서 적용해봐야겠다,

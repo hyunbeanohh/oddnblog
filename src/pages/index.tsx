@@ -66,6 +66,8 @@ const thumbnailGradient: Record<string, string> = {
   블로그: "from-violet-400 to-purple-600",
 }
 
+const hasThumbnail = (post: PostNode) => Boolean(post.frontmatter.thumbnail?.childImageSharp)
+
 /* ── Featured Hero Carousel ────────────────────────── */
 const CAROUSEL_INTERVAL = 5000
 
@@ -469,7 +471,7 @@ const IndexPage = ({ data, location }: IndexPageProps) => {
 
   const pageTitle = activeCategory ? `${activeCategory}` : "전체 아티클"
   const heroPosts = React.useMemo(
-    () => posts.filter(p => !p.frontmatter.draft).slice(0, 3),
+    () => posts.filter(p => !p.frontmatter.draft && hasThumbnail(p)).slice(0, 3),
     [posts]
   )
   const popularPosts = React.useMemo(

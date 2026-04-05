@@ -6,26 +6,13 @@ import Layout from "../components/layout"
 import Seo from "../components/seo"
 import Comments from "../components/comments"
 import TableOfContents from "../components/table-of-contents"
+import { badgeClass } from "../utils/posts"
 
 const SOCIAL_LINKS = {
   github: "https://github.com/hyunbeanohh",
   portfolio: "https://exultant-fuel-232.notion.site/8a98b3b88c4c46b69305ea48e9ba9c26",
   linkedin: "https://www.linkedin.com/in/dev-bean",
 }
-
-/* ── Category badge color map ──────────────────────── */
-const categoryStyle: Record<string, string> = {
-  Engineering: "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400",
-  Design: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400",
-  Product: "bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400",
-  일상: "bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400",
-  블로그: "bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400",
-}
-
-const badgeClass = (tag: string) =>
-  `text-xs px-3 py-1 rounded-full font-medium ${
-    categoryStyle[tag] ?? "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
-  }`
 
 /* ── Profile Popover ───────────────────────────────── */
 const ProfilePopover = ({ onClose }: { onClose: () => void }) => {
@@ -138,7 +125,7 @@ interface BlogPostData {
 interface BlogPostProps {
   data: BlogPostData
   children: React.ReactNode
-  location: { search?: string }
+  location: { pathname: string; search?: string }
   pageContext: { isDraft?: boolean; readingTime?: number }
 }
 
@@ -254,7 +241,7 @@ const BlogPost = ({ data, children, location, pageContext }: BlogPostProps) => {
           <article className="max-w-4xl w-full min-w-0 xl:col-start-2 xl:mx-auto">
           {/* Back link */}
           <Link
-            to={isDraft ? "/draft" : "/"}
+            to={isDraft ? "/draft" : "/articles"}
             className="inline-flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-10 transition-colors group"
           >
             <span className="group-hover:-translate-x-0.5 transition-transform">←</span>

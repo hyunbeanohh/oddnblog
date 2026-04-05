@@ -7,7 +7,7 @@ import "./layout.css"
 
 interface LayoutProps {
   children: React.ReactNode
-  location?: { search?: string }
+  location?: { pathname?: string; search?: string }
   containerClassName?: string
 }
 

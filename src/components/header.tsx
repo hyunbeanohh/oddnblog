@@ -1,9 +1,8 @@
 import * as React from "react"
-import { Link, navigate, useStaticQuery, graphql } from "gatsby"
+import { Link, useStaticQuery, graphql } from "gatsby"
 import { StaticImage } from "gatsby-plugin-image"
 import { useTheme } from "../context/ThemeContext"
-
-const CATEGORIES = ["Engineering", "Design", "Product"]
+import { CATEGORY_DEFINITIONS, getCategorySlug, getPostSlug } from "../utils/posts"
 
 interface PostNode {
   id: string
@@ -19,12 +18,6 @@ interface PostNode {
 interface SearchablePost {
   post: PostNode
   searchableText: string
-}
-
-const getPostSlug = (post: PostNode) => {
-  const dir = post.parent?.relativeDirectory
-  const base = post.frontmatter.draft ? "draft" : "blog"
-  return dir ? `/${base}/${dir}` : post.parent?.name ? `/${base}/${post.parent.name}` : "/"
 }
 
 /* ── SVG icons ─────────────────────────────────────── */
@@ -115,7 +108,7 @@ const GitHubIcon = () => (
 /* ── Header ─────────────────────────────────────────── */
 interface HeaderProps {
   siteTitle: string
-  location?: { search?: string }
+  location?: { pathname?: string }
 }
 
 const Header = ({ siteTitle, location }: HeaderProps) => {
@@ -149,10 +142,7 @@ const Header = ({ siteTitle, location }: HeaderProps) => {
   const [searchQuery, setSearchQuery] = React.useState("")
   const inputRef = React.useRef<HTMLInputElement>(null)
 
-  const activeCategory = React.useMemo(() => {
-    if (!location?.search) return null
-    return new URLSearchParams(location.search).get("category")
-  }, [location?.search])
+  const activePath = location?.pathname ?? "/"
 
   React.useEffect(() => {
     const timer = setTimeout(() => setSearchQuery(searchInput), 150)
@@ -197,10 +187,6 @@ const Header = ({ siteTitle, location }: HeaderProps) => {
     setSearchQuery("")
   }
 
-  const handleCategoryClick = (cat: string) => {
-    navigate(activeCategory === cat ? "/" : `/?category=${cat}`)
-  }
-
   /* ── icon button base classes ── */
   const iconBtnCls =
     "w-9 h-9 rounded-full border-0 bg-transparent flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 cursor-pointer transition-colors duration-150"
@@ -233,18 +219,28 @@ const Header = ({ siteTitle, location }: HeaderProps) => {
 
           {/* ── Right: Category nav + Search ── */}
           <nav className="flex items-center gap-0.5">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() => handleCategoryClick(cat)}
-                className={`px-4 py-1.5 rounded-full text-sm border-0 cursor-pointer transition-colors duration-150 ${
-                  activeCategory === cat
+            <Link
+              to="/articles"
+              className={`px-4 py-1.5 rounded-full text-sm transition-colors duration-150 no-underline ${
+                activePath.startsWith("/articles")
+                  ? "font-semibold bg-blue-500 text-white"
+                  : "font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+              }`}
+            >
+              Articles
+            </Link>
+            {CATEGORY_DEFINITIONS.slice(0, 3).map(category => (
+              <Link
+                key={category.slug}
+                to={`/category/${getCategorySlug(category.name)}`}
+                className={`px-4 py-1.5 rounded-full text-sm transition-colors duration-150 no-underline ${
+                  activePath.startsWith(`/category/${category.slug}`)
                     ? "font-semibold bg-blue-500 text-white"
-                    : "font-medium bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+                    : "font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
                 }`}
               >
-                {cat}
-              </button>
+                {category.name}
+              </Link>
             ))}
 
             <span className="w-px h-[18px] bg-gray-200 dark:bg-gray-700 mx-1.5" />

@@ -7,6 +7,15 @@
 const path = require("path")
 const fs = require("fs")
 
+const POSTS_PER_PAGE = 10
+const CATEGORY_DEFINITIONS = [
+  { name: "Engineering", slug: "engineering" },
+  { name: "Design", slug: "design" },
+  { name: "Product", slug: "product" },
+  { name: "일상", slug: "daily" },
+  { name: "블로그", slug: "blog" },
+]
+
 const estimateReadingMinutes = source => {
   if (!source) return 1
 
@@ -61,10 +70,13 @@ exports.createSchemaCustomization = ({ actions }) => {
 exports.createPages = async ({ graphql, actions }) => {
   const { createPage } = actions
   const blogPostTemplate = path.resolve("./src/templates/blog-post.tsx")
+  const articlesListTemplate = path.resolve("./src/templates/articles-list.tsx")
+  const categoryListTemplate = path.resolve("./src/templates/category-list.tsx")
+  const draftListTemplate = path.resolve("./src/templates/draft-list.tsx")
 
   const result = await graphql(`
     query {
-      allMdx {
+      allMdx(sort: { frontmatter: { date: DESC } }) {
         nodes {
           id
           internal {
@@ -72,6 +84,7 @@ exports.createPages = async ({ graphql, actions }) => {
           }
           frontmatter {
             draft
+            tags
           }
           parent {
             ... on File {
@@ -88,7 +101,75 @@ exports.createPages = async ({ graphql, actions }) => {
     throw result.errors
   }
 
-  result.data.allMdx.nodes.forEach(node => {
+  const allNodes = result.data.allMdx.nodes
+  const publishedNodes = allNodes.filter(node => node.frontmatter?.draft !== true)
+  const draftNodes = allNodes.filter(node => node.frontmatter?.draft === true)
+
+  const createPaginatedPages = ({ items, template, basePath, extraContext = {} }) => {
+    const totalPages = Math.max(1, Math.ceil(items.length / POSTS_PER_PAGE))
+
+    Array.from({ length: totalPages }).forEach((_, index) => {
+      const currentPage = index + 1
+
+      createPage({
+        path: currentPage === 1 ? basePath : `${basePath}/page/${currentPage}`,
+        component: template,
+        context: {
+          limit: POSTS_PER_PAGE,
+          skip: index * POSTS_PER_PAGE,
+          currentPage,
+          totalPages,
+          totalCount: items.length,
+          basePath,
+          ...extraContext,
+        },
+      })
+    })
+  }
+
+  createPaginatedPages({
+    items: publishedNodes,
+    template: articlesListTemplate,
+    basePath: "/articles",
+  })
+
+  const categories = new Map(CATEGORY_DEFINITIONS.map(category => [category.name, []]))
+  publishedNodes.forEach(node => {
+    ;(node.frontmatter?.tags ?? []).forEach(tag => {
+      if (!categories.has(tag)) {
+        categories.set(tag, [])
+      }
+      categories.get(tag).push(node)
+    })
+  })
+
+  categories.forEach((nodes, categoryName) => {
+    const categorySlug =
+      CATEGORY_DEFINITIONS.find(category => category.name === categoryName)?.slug ||
+      String(categoryName)
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "")
+
+    createPaginatedPages({
+      items: nodes,
+      template: categoryListTemplate,
+      basePath: `/category/${categorySlug}`,
+      extraContext: {
+        categoryName,
+        categorySlug,
+      },
+    })
+  })
+
+  createPaginatedPages({
+    items: draftNodes,
+    template: draftListTemplate,
+    basePath: "/draft",
+  })
+
+  allNodes.forEach(node => {
     const dir = node.parent.relativeDirectory
     const isDraft = node.frontmatter?.draft === true
     const basePath = isDraft ? "draft" : "blog"

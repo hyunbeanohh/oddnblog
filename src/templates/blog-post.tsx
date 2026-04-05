@@ -474,12 +474,23 @@ export const Head = ({
   data: BlogPostData
   location: { pathname: string }
 }) => {
-  const { title, description, dateRaw, author, thumbnail, draft } = data.mdx.frontmatter
+  const { title, description, dateRaw, author, thumbnail, draft, tags, references } =
+    data.mdx.frontmatter
   const siteUrl = "https://oddn.ai.kr"
+  const modifiedTime = data.mdx.parent?.modifiedTimeRaw
+  const authorName = author || "오또니"
+  const sameAs = [
+    "https://github.com/hyunbeanohh",
+    "https://www.linkedin.com/in/dev-bean",
+    "https://exultant-fuel-232.notion.site/8a98b3b88c4c46b69305ea48e9ba9c26",
+  ]
   const thumbnailPath = thumbnail?.publicURL
   const thumbnailUrl = thumbnailPath
     ? `${siteUrl}${thumbnailPath.charAt(0) === "/" ? thumbnailPath : `/${thumbnailPath}`}`
     : `${siteUrl}/profile.jpeg`
+  const referenceUrls =
+    references?.map(reference => reference.url?.trim()).filter((url): url is string => Boolean(url)) ??
+    []
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -487,17 +498,29 @@ export const Head = ({
     headline: title,
     description: description,
     datePublished: dateRaw,
+    dateModified: modifiedTime || dateRaw,
+    inLanguage: "ko-KR",
+    mainEntityOfPage: `${siteUrl}${location.pathname}`,
+    keywords: tags,
     author: {
       "@type": "Person",
-      name: author || "오또니",
+      name: authorName,
       url: siteUrl,
+      sameAs,
     },
     url: `${siteUrl}${location.pathname}`,
     image: thumbnailUrl,
-    publisher: {
-      "@type": "Person",
+    isPartOf: {
+      "@type": "Blog",
       name: "오또니",
       url: siteUrl,
+    },
+    citation: referenceUrls,
+    publisher: {
+      "@type": "Person",
+      name: authorName,
+      url: siteUrl,
+      sameAs,
     },
   }
 
@@ -509,6 +532,10 @@ export const Head = ({
       image={thumbnailUrl}
       type="article"
       robots={draft ? "noindex,nofollow" : "index,follow"}
+      publishedTime={dateRaw}
+      modifiedTime={modifiedTime || dateRaw}
+      author={authorName}
+      tags={tags}
     >
       <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
     </Seo>

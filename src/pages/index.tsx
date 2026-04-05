@@ -529,9 +529,26 @@ export const Head = ({ location }: { location: { pathname: string } }) => (
         name: "오또니",
         url: "https://oddn.ai.kr",
         description: "오또니의 개발 블로그",
+        inLanguage: "ko-KR",
+        publisher: {
+          "@type": "Person",
+          name: "오또니",
+          url: "https://oddn.ai.kr",
+          sameAs: [
+            "https://github.com/hyunbeanohh",
+            "https://www.linkedin.com/in/dev-bean",
+            "https://exultant-fuel-232.notion.site/8a98b3b88c4c46b69305ea48e9ba9c26",
+          ],
+        },
         author: {
           "@type": "Person",
           name: "오또니",
+          url: "https://oddn.ai.kr",
+          sameAs: [
+            "https://github.com/hyunbeanohh",
+            "https://www.linkedin.com/in/dev-bean",
+            "https://exultant-fuel-232.notion.site/8a98b3b88c4c46b69305ea48e9ba9c26",
+          ],
         },
       })}
     </script>

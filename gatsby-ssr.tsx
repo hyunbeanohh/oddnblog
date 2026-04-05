@@ -3,7 +3,7 @@ import { ThemeProvider } from "./src/context/ThemeContext"
 import type { GatsbySSR } from "gatsby"
 
 export const onRenderBody: GatsbySSR["onRenderBody"] = ({ setHtmlAttributes, setHeadComponents }) => {
-  setHtmlAttributes({ lang: "en" })
+  setHtmlAttributes({ lang: "ko-KR" })
   setHeadComponents([
     <script
       key="theme-init"

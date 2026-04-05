@@ -15,6 +15,12 @@ module.exports = {
     description: `오또니의 개발 블로그`,
     author: `오또니`,
     siteUrl: `https://oddn.ai.kr`,
+    language: `ko-KR`,
+    social: {
+      github: `https://github.com/hyunbeanohh`,
+      linkedin: `https://www.linkedin.com/in/dev-bean`,
+      portfolio: `https://exultant-fuel-232.notion.site/8a98b3b88c4c46b69305ea48e9ba9c26`,
+    },
   },
   plugins: [
     `gatsby-plugin-postcss`,

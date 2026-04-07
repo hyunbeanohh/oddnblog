@@ -25,8 +25,12 @@ export interface PostSlugNode {
   parent?: { name?: string; relativeDirectory?: string } | null
   frontmatter: {
     draft?: boolean
+    inProgress?: boolean
   }
 }
+
+export const isVisibleInPublicLists = (post: PostSlugNode) =>
+  post.frontmatter.draft !== true || post.frontmatter.inProgress === true
 
 export const getPostSlug = (post: PostSlugNode) => {
   const dir = post.parent?.relativeDirectory

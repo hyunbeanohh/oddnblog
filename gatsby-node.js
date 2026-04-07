@@ -45,6 +45,12 @@ const estimateReadingMinutes = source => {
   return Math.max(1, Math.ceil(minutes))
 }
 
+const isVisibleInPublicLists = node =>
+  node.frontmatter?.draft !== true || node.frontmatter?.inProgress === true
+
+const shouldCreateDetailPage = node =>
+  !(node.frontmatter?.draft === true && node.frontmatter?.inProgress === true)
+
 exports.createSchemaCustomization = ({ actions }) => {
   const { createTypes } = actions
   createTypes(`
@@ -84,6 +90,7 @@ exports.createPages = async ({ graphql, actions }) => {
           }
           frontmatter {
             draft
+            inProgress
             tags
           }
           parent {
@@ -102,6 +109,7 @@ exports.createPages = async ({ graphql, actions }) => {
   }
 
   const allNodes = result.data.allMdx.nodes
+  const listedNodes = allNodes.filter(isVisibleInPublicLists)
   const publishedNodes = allNodes.filter(node => node.frontmatter?.draft !== true)
   const draftNodes = allNodes.filter(node => node.frontmatter?.draft === true)
 
@@ -128,13 +136,13 @@ exports.createPages = async ({ graphql, actions }) => {
   }
 
   createPaginatedPages({
-    items: publishedNodes,
+    items: listedNodes,
     template: articlesListTemplate,
     basePath: "/articles",
   })
 
   const categories = new Map(CATEGORY_DEFINITIONS.map(category => [category.name, []]))
-  publishedNodes.forEach(node => {
+  listedNodes.forEach(node => {
     ;(node.frontmatter?.tags ?? []).forEach(tag => {
       if (!categories.has(tag)) {
         categories.set(tag, [])
@@ -170,6 +178,8 @@ exports.createPages = async ({ graphql, actions }) => {
   })
 
   allNodes.forEach(node => {
+    if (!shouldCreateDetailPage(node)) return
+
     const dir = node.parent.relativeDirectory
     const isDraft = node.frontmatter?.draft === true
     const basePath = isDraft ? "draft" : "blog"

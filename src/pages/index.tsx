@@ -5,7 +5,7 @@ import { GatsbyImage, getImage, IGatsbyImageData } from "gatsby-plugin-image"
 import ArticleCard, { ArticleListPost } from "../components/article-card"
 import Layout from "../components/layout"
 import Seo from "../components/seo"
-import { badgeClass, getPostSlug } from "../utils/posts"
+import { badgeClass, getPostSlug, isVisibleInPublicLists } from "../utils/posts"
 
 interface ThumbnailNode {
   childImageSharp: {
@@ -254,7 +254,7 @@ const RecentCommentsSidebar = () => {
 }
 
 const IndexPage = ({ data, location }: IndexPageProps) => {
-  const latestPosts = data?.latestPosts?.nodes ?? []
+  const latestPosts = (data?.latestPosts?.nodes ?? []).filter(isVisibleInPublicLists).slice(0, 6)
   const heroPosts = (data?.heroPosts?.nodes ?? []).filter(hasThumbnail).slice(0, 3)
   const publishedPosts = data?.publishedPosts?.nodes ?? []
 
@@ -304,11 +304,7 @@ export const Head = ({ location }: { location: { pathname: string } }) => (
 
 export const query = graphql`
   query HomePageQuery {
-    latestPosts: allMdx(
-      sort: { frontmatter: { date: DESC } }
-      filter: { frontmatter: { draft: { ne: true } } }
-      limit: 6
-    ) {
+    latestPosts: allMdx(sort: { frontmatter: { date: DESC } }) {
       nodes {
         id
         parent {

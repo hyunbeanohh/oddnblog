@@ -5,6 +5,7 @@ import Layout from "../components/layout"
 import PostListSection from "../components/post-list-section"
 import Seo from "../components/seo"
 import { ArticleListPost } from "../components/article-card"
+import { isVisibleInPublicLists } from "../utils/posts"
 
 interface ArticlesListData {
   allMdx?: {
@@ -20,12 +21,15 @@ interface ArticlesListPageProps {
     totalPages: number
     basePath: string
     totalCount: number
+    skip: number
+    limit: number
   }
 }
 
 const ArticlesListTemplate = ({ data, location, pageContext }: ArticlesListPageProps) => {
-  const posts = data?.allMdx?.nodes ?? []
-  const { currentPage, totalPages, basePath, totalCount } = pageContext
+  const allPosts = data?.allMdx?.nodes ?? []
+  const { currentPage, totalPages, basePath, totalCount, skip, limit } = pageContext
+  const posts = allPosts.filter(isVisibleInPublicLists).slice(skip, skip + limit)
   const title = currentPage > 1 ? `전체 아티클 - ${currentPage}페이지` : "전체 아티클"
 
   return (
@@ -56,13 +60,8 @@ export const Head = ({
 }
 
 export const query = graphql`
-  query ArticlesListTemplate($skip: Int!, $limit: Int!) {
-    allMdx(
-      sort: { frontmatter: { date: DESC } }
-      filter: { frontmatter: { draft: { ne: true } } }
-      skip: $skip
-      limit: $limit
-    ) {
+  query ArticlesListTemplate {
+    allMdx(sort: { frontmatter: { date: DESC } }) {
       nodes {
         id
         parent {

@@ -5,6 +5,7 @@ import Layout from "../components/layout"
 import PostListSection from "../components/post-list-section"
 import Seo from "../components/seo"
 import { ArticleListPost } from "../components/article-card"
+import { isVisibleInPublicLists } from "../utils/posts"
 
 interface CategoryListData {
   allMdx?: {
@@ -21,12 +22,15 @@ interface CategoryListPageProps {
     basePath: string
     totalCount: number
     categoryName: string
+    skip: number
+    limit: number
   }
 }
 
 const CategoryListTemplate = ({ data, location, pageContext }: CategoryListPageProps) => {
-  const posts = data?.allMdx?.nodes ?? []
-  const { currentPage, totalPages, basePath, totalCount, categoryName } = pageContext
+  const allPosts = data?.allMdx?.nodes ?? []
+  const { currentPage, totalPages, basePath, totalCount, categoryName, skip, limit } = pageContext
+  const posts = allPosts.filter(isVisibleInPublicLists).slice(skip, skip + limit)
 
   return (
     <Layout location={location}>
@@ -60,12 +64,10 @@ export const Head = ({
 }
 
 export const query = graphql`
-  query CategoryListTemplate($skip: Int!, $limit: Int!, $categoryName: String!) {
+  query CategoryListTemplate($categoryName: String!) {
     allMdx(
       sort: { frontmatter: { date: DESC } }
-      filter: { frontmatter: { draft: { ne: true }, tags: { in: [$categoryName] } } }
-      skip: $skip
-      limit: $limit
+      filter: { frontmatter: { tags: { in: [$categoryName] } } }
     ) {
       nodes {
         id

@@ -25,6 +25,8 @@ Gatsby + MDX + Tailwind CSS로 만든 개인 기술 블로그입니다.
 nvm use
 ```
 
+`npm run dev`는 현재 Node 버전이 지원 범위(`18~22`)가 아니면 바로 종료하면서 `nvm use`를 안내하도록 정리했습니다. 또한 Gatsby가 홈 디렉터리 설정 파일을 쓰지 않도록 임시 config 경로를 사용하고, `detect-port`가 멈추는 환경에서는 dev 전용 사전 포트 체크로 우회하도록 맞췄습니다.
+
 ### 설치 및 실행
 
 ```bash

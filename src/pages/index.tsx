@@ -1,7 +1,6 @@
 import * as React from "react"
 import { graphql, Link } from "gatsby"
 import { GatsbyImage, getImage, IGatsbyImageData } from "gatsby-plugin-image"
-
 import ArticleCard, { ArticleListPost } from "../components/article-card"
 import Layout from "../components/layout"
 import Seo from "../components/seo"

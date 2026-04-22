@@ -1,7 +1,6 @@
 import * as React from "react"
 import { Link } from "gatsby"
 import { GatsbyImage, getImage, IGatsbyImageData } from "gatsby-plugin-image"
-
 import { badgeClass, getPostSlug } from "../utils/posts"
 
 interface ThumbnailNode {

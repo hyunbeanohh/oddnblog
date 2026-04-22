@@ -1,6 +1,5 @@
 import * as React from "react"
 import { graphql } from "gatsby"
-
 import Layout from "../components/layout"
 import PostListSection from "../components/post-list-section"
 import Seo from "../components/seo"
@@ -30,7 +29,7 @@ const ArticlesListTemplate = ({ data, location, pageContext }: ArticlesListPageP
   const allPosts = data?.allMdx?.nodes ?? []
   const { currentPage, totalPages, basePath, totalCount, skip, limit } = pageContext
   const posts = allPosts.filter(isVisibleInPublicLists).slice(skip, skip + limit)
-  const title = currentPage > 1 ? `전체 아티클 - ${currentPage}페이지` : "전체 아티클"
+  const _title = currentPage > 1 ? `전체 아티클 - ${currentPage}페이지` : "전체 아티클"
 
   return (
     <Layout location={location}>

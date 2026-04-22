@@ -1,5 +1,4 @@
 import * as React from "react"
-
 import ArticleCard, { ArticleListPost } from "./article-card"
 import Pagination from "./pagination"
 

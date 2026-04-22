@@ -24,13 +24,21 @@
     "shiki": "^4.0.2"
   },
   "devDependencies": {
-    "@netlify/edge-functions": "^3.0.3",
-    "@netlify/plugin-gatsby": "^3.8.4",
+    "@eslint/compat": "^2.0.5",
+    "@playwright/test": "^1.59.1",
     "@types/node": "^25.3.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.59.0",
+    "@typescript-eslint/parser": "^8.59.0",
     "autoprefixer": "^10.4.24",
     "chokidar": "^5.0.0",
+    "eslint": "^10.2.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "gatsby-plugin-postcss": "^6.16.0",
     "postcss": "^8.5.6",
     "prettier": "^2.8.8",
@@ -51,7 +59,6 @@
   "scripts": {
     "prebuild": "node scripts/generate-content-index.js && node scripts/generate-search-documents.js",
     "build": "gatsby build",
-    "build:ci": "node scripts/generate-content-index.js && node scripts/generate-search-documents.js && gatsby build",
     "cf:dev": "wrangler dev",
     "cf:deploy": "wrangler deploy",
     "cf:d1:migrate:local": "wrangler d1 migrations apply my-blog --local",
@@ -64,7 +71,11 @@
     "serve": "gatsby serve",
     "clean": "gatsby clean && node -e \"const fs=require('fs'); const f='content/content-index.json'; if(fs.existsSync(f)) fs.unlinkSync(f);\"",
     "index": "node scripts/generate-content-index.js",
-    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1"
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed"
   },
   "repository": {
     "type": "git",

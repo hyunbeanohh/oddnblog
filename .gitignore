@@ -53,6 +53,7 @@ typings/
 
 # dotenv environment variable files
 .env*
+!.env.example
 
 # gatsby files
 .cache/
@@ -68,9 +69,11 @@ yarn-error.log
 # Yarn Integrity file
 .yarn-integrity
 
-# Local Netlify folder
-.netlify
-
 # Generated build artifacts (빌드 전 스크립트로 자동 생성됨)
 content/content-index.json
 static/search-documents.json
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

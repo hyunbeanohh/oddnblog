@@ -27,14 +27,14 @@ Prefer small, safe changes. Avoid unrelated refactors.
 1) Explain plan in 3-7 bullets.
 2) Apply minimal diff.
 3) Run checks:
-   - lint: run configured lint command if present
+   - lint: `npm run lint`
    - test: `npm run test`
    - build: `npm run build`
 4) Summarize changes + risks + rollback steps.
 
 ## Repo context
 - Stack: Gatsby 5 + React + TypeScript + MDX + Tailwind CSS
-- Deploy/runtime: Netlify (`netlify.toml`, `netlify/functions`, `netlify/edge-functions`)
+- Deploy/runtime: Cloudflare Pages + Workers (`wrangler.jsonc`, `worker/`)
 - Key app paths:
   - pages: `src/pages`
   - templates: `src/templates`
@@ -45,11 +45,17 @@ Prefer small, safe changes. Avoid unrelated refactors.
 - Install: `npm install`
 - Dev server: `npm run dev` (or `npm run start`)
 - Dev with MDX watcher: `npm run dev:watch`
-- Build: `npm run build` (CI build: `npm run build:ci`)
+- Build: `npm run build`
 - Serve built site: `npm run serve`
 - Clean Gatsby/cache artifacts: `npm run clean`
 - Content index generation: `npm run index`
-- Test (placeholder in current repo): `npm run test`
+- Lint: `npm run lint`
+- Lint fix: `npm run lint:fix`
+- Test (E2E Playwright): `npm run test`
+- Test UI mode: `npm run test:ui`
+- Test headed: `npm run test:headed`
+- Cloudflare dev: `npm run cf:dev`
+- Cloudflare deploy: `npm run cf:deploy`
 
 ## Notes for checks
 - If a check command is missing in this repository, use the closest available equivalent and state what was run.

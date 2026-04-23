@@ -324,12 +324,12 @@ const handleCommentsPost = async (request: Request, env: Env) => {
 
   await env.DB.prepare(
     `INSERT INTO post_comments (post_slug, author_name, body, status, created_at)
-     VALUES (?, ?, ?, 'pending', ?)`
+     VALUES (?, ?, ?, 'approved', ?)`
   )
     .bind(slug, authorName, body, new Date().toISOString())
     .run()
 
-  return createJsonResponse({ ok: true, status: "pending" }, { status: 202 })
+  return createJsonResponse({ ok: true, status: "approved" }, { status: 201 })
 }
 
 const handleAdminCommentsGet = async (request: Request, env: Env) => {

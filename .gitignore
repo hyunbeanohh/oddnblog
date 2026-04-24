@@ -77,3 +77,9 @@ static/search-documents.json
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Local tool state
+.claude/
+.netlify/
+.omc/
+.wrangler/

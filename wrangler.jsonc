@@ -9,7 +9,7 @@
     {
       "binding": "DB",
       "database_name": "my-blog",
-      "database_id": "replace-with-your-d1-database-id"
+      "database_id": "4fa2030c-6259-4952-9b94-6c1903cc99e3"
     }
   ],
   "vectorize": [

@@ -286,19 +286,23 @@ const handleCommentsGet = async (request: Request, env: Env) => {
   const slug = normalizeSlug(url.searchParams.get("slug"))
   if (!slug) return createJsonResponse({ error: "slug is required" }, { status: 400 })
 
-  const result = await env.DB.prepare(
-    `SELECT id, author_name AS authorName, body, created_at AS createdAt
-     FROM post_comments
-     WHERE post_slug = ? AND status = 'approved'
-     ORDER BY created_at DESC
-     LIMIT 50`
-  )
-    .bind(slug)
-    .all()
+  try {
+    const result = await env.DB.prepare(
+      `SELECT id, author_name AS authorName, body, created_at AS createdAt
+       FROM post_comments
+       WHERE post_slug = ? AND status = 'approved'
+       ORDER BY created_at DESC
+       LIMIT 50`
+    )
+      .bind(slug)
+      .all()
 
-  return createJsonResponse({
-    comments: Array.isArray(result.results) ? result.results : [],
-  })
+    return createJsonResponse({
+      comments: Array.isArray(result.results) ? result.results : [],
+    })
+  } catch {
+    return createJsonResponse({ error: "failed to fetch comments" }, { status: 500 })
+  }
 }
 
 const handleCommentsPost = async (request: Request, env: Env) => {
@@ -322,14 +326,18 @@ const handleCommentsPost = async (request: Request, env: Env) => {
     return createJsonResponse({ error: "turnstile verification failed" }, { status: 403 })
   }
 
-  await env.DB.prepare(
-    `INSERT INTO post_comments (post_slug, author_name, body, status, created_at)
-     VALUES (?, ?, ?, 'approved', ?)`
-  )
-    .bind(slug, authorName, body, new Date().toISOString())
-    .run()
+  try {
+    await env.DB.prepare(
+      `INSERT INTO post_comments (post_slug, author_name, body, status, created_at)
+       VALUES (?, ?, ?, 'approved', ?)`
+    )
+      .bind(slug, authorName, body, new Date().toISOString())
+      .run()
 
-  return createJsonResponse({ ok: true, status: "approved" }, { status: 201 })
+    return createJsonResponse({ ok: true, status: "approved" }, { status: 201 })
+  } catch {
+    return createJsonResponse({ error: "댓글 저장에 실패했습니다." }, { status: 500 })
+  }
 }
 
 const handleAdminCommentsGet = async (request: Request, env: Env) => {

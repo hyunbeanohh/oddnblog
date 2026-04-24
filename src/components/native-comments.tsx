@@ -190,8 +190,8 @@ const NativeComments = ({ slug }: NativeCommentsProps) => {
         }),
       })
 
-      const data = await response.json()
       if (!response.ok) {
+        const data = await response.json().catch(() => ({})) as { error?: string }
         throw new Error(typeof data.error === "string" ? data.error : "댓글 저장에 실패했습니다.")
       }
 
